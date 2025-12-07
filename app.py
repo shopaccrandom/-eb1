@@ -89,23 +89,35 @@ def logout():
 def dashboard():
     return f'Hello, {current_user.username}!'
 
-@app.route('/hoangvanhuy')
-@login_required
+@app.route('/hoangvanhuy', methods=['GET', 'POST'])
 def admin():
-    if current_user.username != 'hoangvanhuy':
-        flash('Access denied!')
-        return redirect(url_for('index'))
-    users = User.query.all()
-    return render_template('admin.html', users=users)
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == 'hoangvanhuy' and password == 'tothichcau':
+            session['admin'] = True
+            users = User.query.all()
+            return render_template('admin.html', users=users)
+        else:
+            flash('Invalid admin credentials!')
+            return redirect(url_for('admin'))
+    if session.get('admin'):
+        users = User.query.all()
+        return render_template('admin.html', users=users)
+    return render_template('admin_login.html')
 
 @app.route('/delete_user/<int:user_id>', methods=['POST'])
-@login_required
 def delete_user(user_id):
-    if current_user.username != 'hoangvanhuy':
+    if not session.get('admin'):
         flash('Access denied!')
-        return redirect(url_for('index'))
+        return redirect(url_for('admin'))
     user = User.query.get_or_404(user_id)
     db.session.delete(user)
     db.session.commit()
     flash('User deleted!')
+    return redirect(url_for('admin'))
+
+@app.route('/admin_logout')
+def admin_logout():
+    session.pop('admin', None)
     return redirect(url_for('admin'))
