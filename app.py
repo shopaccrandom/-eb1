@@ -24,9 +24,16 @@ class User(UserMixin, db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Create database tables
+# Create database tables and default admin user
 with app.app_context():
     db.create_all()
+    # Create default admin user if not exists
+    admin_user = User.query.filter_by(username='hoangvanhuy').first()
+    if not admin_user:
+        hashed_password = generate_password_hash('tothichcau', method='sha256')
+        admin_user = User(name='Admin', username='hoangvanhuy', password=hashed_password, referral=None)
+        db.session.add(admin_user)
+        db.session.commit()
 
 @app.route('/')
 @login_required
